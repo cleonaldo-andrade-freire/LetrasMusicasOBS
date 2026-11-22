@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estúdio de Letras — Novo Tempo Aracaju</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e1116; --painel: #161b23; --painel2: #1d2430; --borda: #2a3342;
+    --texto: #e6e9ef; --suave: #93a0b4; --destaque: #f2b705; --ok: #3ccf8e; --alerta: #ff9f43; --erro: #ff5d5d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--texto); font: 14px/1.45 Inter, 'Segoe UI', sans-serif; }
+  header {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 12px 20px; border-bottom: 1px solid var(--borda); background: var(--painel);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  header h1 span { color: var(--suave); font-weight: 500; }
+  .espaco { flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--borda); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: transparent; }
+  .seg button.ativo { background: var(--destaque); color: #111; }
+  .status { font-size: 12px; color: var(--suave); display: flex; align-items: center; gap: 6px; }
+  .status i { width: 9px; height: 9px; border-radius: 50%; background: var(--suave); display: inline-block; }
+  .status.ok i { background: var(--ok); } .status.erro i { background: var(--erro); }
+
+  main { display: grid; grid-template-columns: 400px 1fr; gap: 16px; padding: 16px; align-items: start; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .coluna { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .card { background: var(--painel); border: 1px solid var(--borda); border-radius: 12px; padding: 14px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--suave); margin: 0 0 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .card h2 .espaco { flex: 1; }
+
+  label { display: block; font-size: 12px; color: var(--suave); margin: 8px 0 4px; }
+  input[type=text], textarea, select {
+    width: 100%; background: var(--painel2); color: var(--texto); border: 1px solid var(--borda);
+    border-radius: 8px; padding: 8px 10px; font: inherit;
+  }
+  textarea { min-height: 220px; resize: vertical; font-family: Consolas, 'Cascadia Mono', monospace; font-size: 13px; line-height: 1.5; }
+  input[type=range] { width: 100%; accent-color: var(--destaque); }
+  input[type=color] { width: 44px; height: 32px; border: 1px solid var(--borda); background: var(--painel2); border-radius: 6px; padding: 2px; }
+  .linha-ctl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .check { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--texto); font-size: 13px; }
+
+  button {
+    background: var(--painel2); color: var(--texto); border: 1px solid var(--borda); border-radius: 8px;
+    padding: 7px 12px; font: inherit; font-weight: 500; cursor: pointer;
+  }
+  button:hover { border-color: #3d4a60; }
+  button.prim { background: var(--destaque); color: #111; border-color: var(--destaque); font-weight: 600; }
+  .botoes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+  .slides { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow: auto; }
+  .slide {
+    display: grid; grid-template-columns: 28px 1fr; gap: 8px; padding: 8px 10px;
+    border: 1px solid var(--borda); border-radius: 8px; cursor: pointer; background: var(--painel2);
+  }
+  .slide:hover { border-color: #3d4a60; }
+  .slide.atual { border-color: var(--destaque); box-shadow: inset 3px 0 0 var(--destaque); }
+  .slide .n { color: var(--suave); font-weight: 600; }
+  .slide .t { white-space: pre-line; font-size: 13px; }
+  .slide .av { color: var(--alerta); font-size: 11px; margin-top: 4px; }
+  .slide.vazio .t { color: var(--suave); font-style: italic; }
+
+  .previas { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 1800px) { .previas { grid-template-columns: 1fr 1fr; } }
+  .previa h2 { margin-bottom: 8px; }
+  .info { font-size: 12px; color: var(--suave); margin-top: 8px; }
+  .info b { color: var(--texto); font-weight: 600; }
+
+  .tela { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #000; border-radius: 4px; }
+  .tela iframe { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; background: transparent; }
+  .tela .cena { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background-size: cover; background-position: center; }
+
+  /* Moldura de TV */
+  .tv { background: #0b0b0b; padding: 1.6% 1.6% 2.4%; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 0 0 1px #222; }
+  .tv .marca { text-align: center; font-size: 9px; color: #555; letter-spacing: .3em; margin-top: 4px; }
+
+  /* Moldura YouTube */
+  .yt { background: #000; border-radius: 10px; overflow: hidden; }
+  .yt .barra { height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: linear-gradient(transparent, rgba(0,0,0,.6)); color: #fff; font-size: 12px; }
+  .yt .barra .prog { flex: 1; height: 3px; background: rgba(255,255,255,.25); position: relative; }
+  .yt .barra .prog::before { content: ''; position: absolute; inset: 0 30% 0 0; background: #f00; }
+  .ao-vivo { background: #c00; color: #fff; font-weight: 700; padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+
+  .url { display: flex; gap: 8px; }
+  .url input { font-family: Consolas, monospace; font-size: 12px; }
+  kbd { background: var(--painel2); border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-size: 11px; }
+  .dica { font-size: 12px; color: var(--suave); margin-top: 8px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ok); color: #062; font-weight: 600; padding: 8px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.on { opacity: 1; }
+  .oculto { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Estúdio de Letras <span>· Espaço Novo Tempo Aracaju</span></h1>
+  <div class="seg" id="fonteSeg">
+    <button data-fonte="local" class="ativo">Letra local</button>
+    <button data-fonte="holyrics">Holyrics ao vivo</button>
+  </div>
+  <div class="status" id="status"><i></i><span>Modo simulação</span></div>
+  <div class="espaco"></div>
+  <span class="dica" style="margin:0"><kbd>←</kbd> <kbd>→</kbd> navegar · <kbd>B</kbd> tela em branco</span>
+</header>
+
+<main>
+  <div class="coluna">
+    <section class="card" id="cardLetra">
+      <h2>Letra</h2>
+      <label for="titulo">Título da música</label>
+      <input type="text" id="titulo" value="Música de exemplo">
+      <label for="letra">Texto (deixe uma linha em branco entre os slides)</label>
+      <textarea id="letra" spellcheck="false"></textarea>
+      <div class="linha-ctl">
+        <div><label for="maxLinhas">Máx. linhas por slide (TV)</label><select id="maxLinhas"><option>2</option><option>3</option><option selected>4</option></select></div>
+        <div><label for="maxChars">Máx. caracteres por linha</label><select id="maxChars"><option>28</option><option selected>32</option><option>36</option><option>40</option></select></div>
+      </div>
+      <div class="botoes">
+        <button class="prim" id="btnFormatar" title="Quebra linhas longas e divide slides grandes">Formatar no padrão</button>
+        <button id="btnCopiar" title="Copia a letra para colar no Holyrics">Copiar para o Holyrics</button>
+      </div>
+      <p class="dica">“Formatar no padrão” corrige a letra para a TV. Depois é só copiar e colar na música dentro do Holyrics.</p>
+    </section>
+
+    <section class="card">
+      <h2>Slides <span class="espaco"></span><span id="resumo" style="text-transform:none;letter-spacing:0"></span></h2>
+      <div class="slides" id="slides"></div>
+      <div class="botoes" id="navSlides">
+        <button id="btnAnt">← Anterior</button>
+        <button id="btnProx">Próximo →</button>
+        <button id="btnBranco">Tela em branco</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="coluna">
+    <div class="previas">
+      <section class="card previa">
+        <h2>TV 49" · Público local <span class="espaco"></span><button id="abrirTv" title="Abre a tela em 1920×1080">Abrir em 1080p</button></h2>
+        <div class="tv"><div class="tela" id="telaTv"><iframe id="frameTv" src="tv.html" title="Simulação da TV"></iframe></div><div class="marca">49"</div></div>
+        <div class="info" id="infoTv">—</div>
+      </section>
+
+      <section class="card previa">
+        <h2>YouTube 1080p · Rodapé <span class="espaco"></span><button id="abrirYt" title="Abre o rodapé em 1920×1080">Abrir em 1080p</button></h2>
+        <div class="yt">
+          <div class="tela" id="telaYt">
+            <div class="cena" id="cena"></div>
+            <iframe id="frameYt" src="rodape.html?modo=estudio" title="Simulação do rodapé" allowtransparency="true"></iframe>
+          </div>
+          <div class="barra"><span class="ao-vivo">AO VIVO</span><div class="prog"></div><span>1080p</span></div>
+        </div>
+        <div class="info" id="infoYt">—</div>
+      </section>
+    </div>
+
+    <div class="previas">
+      <section class="card">
+        <h2>Estilo do rodapé (OBS)</h2>
+        <div class="linha-ctl">
+          <div><label for="estilo">Estilo</label>
+            <select id="estilo"><option value="faixa">Faixa translúcida</option><option value="degrade">Degradê na base</option><option value="limpo">Só texto com sombra</option></select></div>
+          <div><label for="fonteR">Fonte</label>
+            <select id="fonteR"><option>Montserrat</option><option>Inter</option><option>Poppins</option><option>Segoe UI</option></select></div>
+        </div>
+        <label for="tamanho">Tamanho do texto: <b id="vTamanho"></b></label>
+        <input type="range" id="tamanho" min="38" max="72" value="54">
+        <label for="opacidade">Opacidade do fundo: <b id="vOpacidade"></b></label>
+        <input type="range" id="opacidade" min="0" max="100" value="72">
+        <label for="margem">Distância da base: <b id="vMargem"></b></label>
+        <input type="range" id="margem" min="20" max="160" value="64">
+        <div class="linha-ctl">
+          <div><label for="linhasR">Linhas no rodapé</label><select id="linhasR"><option value="1">1 linha</option><option value="2" selected>2 linhas</option></select></div>
+          <div><label>Cores (destaque / texto)</label><div style="display:flex;gap:8px"><input type="color" id="destaque" value="#f2b705"><input type="color" id="cor" value="#ffffff"></div></div>
+        </div>
+        <label class="check"><input type="checkbox" id="mostrarTitulo"> Mostrar nome da música</label>
+        <label class="check"><input type="checkbox" id="maiusculas"> Texto em MAIÚSCULAS</label>
+        <label for="urlObs" style="margin-top:14px">URL para colar na Fonte de Navegador do OBS</label>
+        <div class="url"><input type="text" id="urlObs" readonly><button id="copiarUrl">Copiar</button></div>
+        <p class="dica">Ela usa o servidor local (<code>Iniciar-Rodape.bat</code>). O token fica no <code>config.json</code> e não aparece na URL.</p>
+      </section>
+
+      <section class="card">
+        <h2>Cenários</h2>
+        <label for="imgCena">Imagem de fundo da câmera (print de uma transmissão real)</label>
+        <input type="file" id="imgCena" accept="image/*">
+        <label for="imgTv" style="margin-top:12px">Imagem de fundo da TV (o fundo usado no Holyrics)</label>
+        <input type="file" id="imgTv" accept="image/*">
+        <div class="linha-ctl">
+          <div><label for="fonteTv">Fonte da TV</label><select id="fonteTv"><option>Montserrat</option><option>Inter</option><option>Poppins</option><option>Segoe UI</option></select></div>
+          <div><label for="maxTv">Fonte máx. da TV</label><select id="maxTv"><option>90</option><option selected>110</option><option>130</option><option>150</option></select></div>
+        </div>
+        <label for="distancia">Distância da última fileira até a TV: <b id="vDist"></b></label>
+        <input type="range" id="distancia" min="2" max="20" value="8">
+        <label class="check"><input type="checkbox" id="guiaTv"> Mostrar área segura na TV</label>
+        <label class="check"><input type="checkbox" id="maiusTv"> TV em MAIÚSCULAS</label>
+      </section>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script src="js/lyrics-core.js"></script>
+<script src="js/holyrics.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LC = window.LyricsCore;
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Letra de exemplo (original, criada só para teste) — de propósito com slides longos demais.
+  var EXEMPLO = [
+    'Quando a manhã desperta sobre a cidade\nE o sol se levanta trazendo esperança\nEu lembro que a Tua fidelidade\nNunca falhou, é firme como aliança\nSenhor, eu venho Te entregar o meu dia\nE tudo o que sou coloco em Tuas mãos',
+    'Tu és a rocha onde eu firmo os meus pés\nTu és a luz que ilumina o caminho\nMesmo na tempestade eu sei quem Tu és',
+    'Eu vou cantar, eu vou cantar\nA Tua graça me alcançou\nEu vou cantar, eu vou cantar\nPorque o Teu amor me transformou'
+  ].join('\n\n');
+
+  var estado = {
+    fonte: 'local',
+    slides: [],          // arrays de linhas
+    indice: 0,
+    branco: false,
+    textoAoVivo: '', tituloAoVivo: '',
+    janelas: []          // janelas abertas em 1080p
+  };
+
+  /* ---------------- Escala das prévias ---------------- */
+  function escalar() {
+    document.querySelectorAll('.tela').forEach(function (t) {
+      var s = t.clientWidth / 1920;
+      t.querySelectorAll('iframe, .cena').forEach(function (f) { f.style.transform = 'scale(' + s + ')'; });
+    });
+  }
+  new ResizeObserver(escalar).observe(document.body);
+
+  /* ---------------- Comunicação com as telas ---------------- */
+  function alvos() {
+    estado.janelas = estado.janelas.filter(function (w) { return w && !w.closed; });
+    return [$('frameTv').contentWindow, $('frameYt').contentWindow].concat(estado.janelas);
+  }
+  function enviar(msg) { alvos().forEach(function (w) { try { w.postMessage(msg, '*'); } catch (e) {} }); }
+
+  function cfgRodape() {
+    return {
+      estilo: $('estilo').value, fonte: $('fonteR').value, tamanho: +$('tamanho').value,
+      opacidade: +$('opacidade').value / 100, margem: +$('margem').value, linhas: +$('linhasR').value,
+      destaque: $('destaque').value.slice(1), cor: $('cor').value.slice(1),
+      titulo: $('mostrarTitulo').checked, maiusculas: $('maiusculas').checked
+    };
+  }
+  var fundoTv = '';
+  function cfgTv() {
+    return { fonte: $('fonteTv').value, maximo: +$('maxTv').value, guia: $('guiaTv').checked, maiusculas: $('maiusTv').checked, fundo: fundoTv };
+  }
+
+  function textoAtual() {
+    if (estado.branco) return { texto: '', titulo: '' };
+    if (estado.fonte === 'holyrics') return { texto: estado.textoAoVivo, titulo: estado.tituloAoVivo, capa: estado.capaAoVivo };
+    var s = estado.slides[estado.indice];
+    return { texto: s ? s.join('\n') : '', titulo: $('titulo').value };
+  }
+
+  function enviarTudo() {
+    enviar({ tipo: 'config', cfg: cfgRodape() });
+    enviar({ tipo: 'config-tv', cfg: cfgTv() });
+    var t = textoAtual();
+    enviar({ tipo: 'slide', texto: t.texto, titulo: t.titulo, capa: !!t.capa });
+    atualizarInfo();
+  }
+
+  window.addEventListener('message', function (ev) {
+    var m = ev.data || {};
+    if (m.tipo === 'pronto') {
+      // Uma tela acabou de carregar: manda configuração e slide atual para ela.
+      var t = textoAtual();
+      ev.source.postMessage({ tipo: 'config', cfg: cfgRodape() }, '*');
+      ev.source.postMessage({ tipo: 'config-tv', cfg: cfgTv() }, '*');
+      ev.source.postMessage({ tipo: 'slide', texto: t.texto, titulo: t.titulo, capa: !!t.capa }, '*');
+    }
+    if (m.tipo === 'tv-fonte' && ev.source === $('frameTv').contentWindow) { estado.tvPx = m.px; atualizarInfo(); }
+  });
+
+  /* ---------------- Informações de legibilidade ---------------- */
+  function atualizarInfo() {
+    // TV 49" 16:9 => altura útil ≈ 61 cm. Letra maiúscula ≈ 70% do tamanho da fonte.
+    var px = estado.tvPx || 0;
+    var capCm = px / 1080 * 61 * 0.7;
+    var alcance = capCm * 1.2; // regra prática: ~2,5 cm de letra para cada 3 m de distância
+    var dist = +$('distancia').value;
+    var ok = alcance >= dist;
+    var t = textoAtual();
+    var nLinhas = LC.linhas(t.texto).length;
+    $('infoTv').innerHTML = px
+      ? 'Fonte calculada: <b>' + px + ' px</b> · letra maiúscula ≈ <b>' + capCm.toFixed(1) + ' cm</b> · leitura confortável até ≈ <b>' +
+        alcance.toFixed(1) + ' m</b> — ' + (ok ? '<span style="color:var(--ok)">ok para ' + dist + ' m</span>'
+        : '<span style="color:var(--alerta)">pequena para ' + dist + ' m: use menos linhas ou linhas mais curtas</span>') +
+        (nLinhas ? ' · ' + nLinhas + ' linha(s)' : '')
+      : 'Tela em branco';
+    var rod = LC.paraRodape(LC.linhas(t.texto), +$('linhasR').value);
+    $('infoYt').innerHTML = rod.length
+      ? 'Rodapé: <b>' + rod.length + ' linha(s)</b> · ' + rod.map(function (l) { return l.length; }).join(' / ') + ' caracteres'
+      : 'Rodapé oculto (tela em branco, pregação, avisos…)';
+  }
+
+  /* ---------------- Letra e lista de slides ---------------- */
+  function opcoesPadrao() { return { maxLinhasSlide: +$('maxLinhas').value, maxCaracteresLinha: +$('maxChars').value }; }
+
+  function lerLetra() {
+    estado.slides = LC.lerLetra($('letra').value);
+    if (estado.indice >= estado.slides.length) estado.indice = Math.max(0, estado.slides.length - 1);
+    desenharSlides();
+    enviarTudo();
+  }
+
+  function desenharSlides() {
+    var box = $('slides'); box.innerHTML = '';
+    var comAviso = 0;
+    if (estado.fonte === 'holyrics') {
+      box.innerHTML = '<div class="dica">Os slides estão vindo do Holyrics. Navegue pelo próprio Holyrics.</div>';
+      $('resumo').textContent = '';
+      return;
+    }
+    estado.slides.forEach(function (linhas, i) {
+      var av = LC.avisos(linhas, opcoesPadrao());
+      if (av.length) comAviso++;
+      var d = document.createElement('div');
+      d.className = 'slide' + (i === estado.indice && !estado.branco ? ' atual' : '');
+      d.innerHTML = '<div class="n">' + (i + 1) + '</div><div><div class="t"></div>' + (av.length ? '<div class="av">⚠ ' + av.join(' · ') + '</div>' : '') + '</div>';
+      d.querySelector('.t').textContent = linhas.join('\n');
+      d.onclick = function () { irPara(i); };
+      box.appendChild(d);
+    });
+    $('resumo').innerHTML = estado.slides.length + ' slides' + (comAviso ? ' · <span style="color:var(--alerta)">' + comAviso + ' fora do padrão</span>' : ' · <span style="color:var(--ok)">tudo no padrão</span>');
+    var atual = box.querySelector('.atual'); atual && atual.scrollIntoView({ block: 'nearest' });
+  }
+
+  function irPara(i) {
+    if (!estado.slides.length) return;
+    estado.indice = Math.max(0, Math.min(estado.slides.length - 1, i));
+    estado.branco = false;
+    desenharSlides(); enviarTudo();
+  }
+
+  $('letra').value = EXEMPLO;
+  var debounce;
+  $('letra').addEventListener('input', function () { clearTimeout(debounce); debounce = setTimeout(lerLetra, 250); });
+  $('titulo').addEventListener('input', enviarTudo);
+  $('maxLinhas').onchange = $('maxChars').onchange = desenharSlides;
+
+  $('btnFormatar').onclick = function () {
+    var antes = LC.lerLetra($('letra').value).length;
+    var novos = LC.formatarLetra($('letra').value, opcoesPadrao());
+    $('letra').value = LC.slidesParaTexto(novos);
+    estado.indice = 0; lerLetra();
+    toast('Formatado: ' + antes + ' → ' + novos.length + ' slides');
+  };
+  $('btnCopiar').onclick = function () { copiar($('letra').value, 'Letra copiada. Cole no Holyrics.'); };
+  $('btnAnt').onclick = function () { irPara(estado.indice - 1); };
+  $('btnProx').onclick = function () { irPara(estado.indice + 1); };
+  $('btnBranco').onclick = function () { estado.branco = !estado.branco; desenharSlides(); enviarTudo(); };
+
+  document.addEventListener('keydown', function (e) {
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || estado.fonte !== 'local') return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); irPara(estado.indice + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); irPara(estado.indice - 1); }
+    else if (e.key === 'Home') irPara(0);
+    else if (e.key.toLowerCase() === 'b') { estado.branco = !estado.branco; desenharSlides(); enviarTudo(); }
+  });
+
+  /* ---------------- Estilo / URL do OBS ---------------- */
+  function urlObs() {
+    var c = cfgRodape();
+    var base = location.protocol.indexOf('http') === 0 ? location.origin : 'http://localhost:8787';
+    var p = new URLSearchParams({
+      estilo: c.estilo, fonte: c.fonte, tamanho: c.tamanho, opacidade: c.opacidade, margem: c.margem,
+      linhas: c.linhas, destaque: c.destaque, cor: c.cor
+    });
+    if (c.titulo) p.set('titulo', '1');
+    if (c.maiusculas) p.set('maiusculas', '1');
+    return base + '/rodape.html?' + p.toString();
+  }
+  function aoMudarEstilo() {
+    $('vTamanho').textContent = $('tamanho').value + ' px';
+    $('vOpacidade').textContent = $('opacidade').value + '%';
+    $('vMargem').textContent = $('margem').value + ' px';
+    $('vDist').textContent = $('distancia').value + ' m';
+    $('urlObs').value = urlObs();
+    enviarTudo();
+  }
+  ['estilo', 'fonteR', 'tamanho', 'opacidade', 'margem', 'linhasR', 'destaque', 'cor', 'mostrarTitulo', 'maiusculas',
+   'fonteTv', 'maxTv', 'guiaTv', 'maiusTv', 'distancia'].forEach(function (id) {
+    $(id).addEventListener('input', aoMudarEstilo);
+    $(id).addEventListener('change', aoMudarEstilo);
+  });
+  $('copiarUrl').onclick = function () { copiar($('urlObs').value, 'URL copiada'); };
+
+  /* ---------------- Imagens de fundo ---------------- */
+  function cenaPadrao() {
+    // Cena genérica de palco (gradientes) até carregar um print real da câmera.
+    $('cena').style.backgroundImage =
+      'radial-gradient(circle at 22% 18%, rgba(255,190,90,.55), transparent 28%),' +
+      'radial-gradient(circle at 78% 15%, rgba(120,160,255,.45), transparent 30%),' +
+      'radial-gradient(ellipse at 50% 85%, rgba(60,40,30,.9), transparent 60%),' +
+      'linear-gradient(180deg, #2b2f3d 0%, #3c3428 55%, #1b1612 100%)';
+  }
+  cenaPadrao();
+  function lerImagem(input, fn) {
+    var f = input.files && input.files[0]; if (!f) return;
+    var r = new FileReader(); r.onload = function () { fn(r.result); }; r.readAsDataURL(f);
+  }
+  $('imgCena').onchange = function () { lerImagem(this, function (url) { $('cena').style.backgroundImage = 'url("' + url + '")'; }); };
+  $('imgTv').onchange = function () { lerImagem(this, function (url) { fundoTv = url; enviarTudo(); }); };
+
+  /* ---------------- Janelas em 1080p ---------------- */
+  function abrir(url, nome) {
+    var w = window.open(url, nome, 'width=1920,height=1080');
+    if (w) estado.janelas.push(w);
+  }
+  $('abrirTv').onclick = function () { abrir('tv.html', 'tv1080'); };
+  $('abrirYt').onclick = function () { abrir('rodape.html?modo=estudio', 'yt1080'); };
+
+  /* ---------------- Holyrics ao vivo ---------------- */
+  var cliente = null;
+  function status(cls, txt) { $('status').className = 'status ' + cls; $('status').querySelector('span').textContent = txt; }
+  function definirFonte(f) {
+    estado.fonte = f;
+    document.querySelectorAll('#fonteSeg button').forEach(function (b) { b.classList.toggle('ativo', b.dataset.fonte === f); });
+    $('cardLetra').classList.toggle('oculto', f === 'holyrics');
+    $('navSlides').classList.toggle('oculto', f === 'holyrics');
+    if (cliente) { cliente.parar(); cliente = null; }
+    if (f === 'holyrics') {
+      if (location.protocol.indexOf('http') !== 0) {
+        status('erro', 'Abra pelo servidor: http://localhost:8787/studio.html');
+      } else {
+        status('', 'Conectando ao Holyrics…');
+        cliente = new HolyricsClient({
+          aoMudar: function (i) {
+            status('ok', i.bruto ? 'Holyrics: ' + (i.titulo || i.tipo) + (i.slide ? ' · slide ' + i.slide + '/' + i.total : '') : 'Holyrics conectado · nada no ar');
+            if (i.texto !== estado.textoAoVivo || i.titulo !== estado.tituloAoVivo || !!i.capa !== !!estado.capaAoVivo) {
+              estado.textoAoVivo = i.texto; estado.tituloAoVivo = i.titulo; estado.capaAoVivo = !!i.capa; enviarTudo();
+            }
+          },
+          aoErro: function (e) { status('erro', 'Sem conexão: ' + e.message.slice(0, 80)); }
+        });
+        cliente.iniciar();
+      }
+    } else status('', 'Modo simulação');
+    desenharSlides(); enviarTudo();
+  }
+  document.querySelectorAll('#fonteSeg button').forEach(function (b) { b.onclick = function () { definirFonte(b.dataset.fonte); }; });
+
+  /* ---------------- Utilidades ---------------- */
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('on'); setTimeout(function () { t.classList.remove('on'); }, 1800); }
+  function copiar(txt, msg) {
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject())
+      .then(function () { toast(msg); })
+      .catch(function () { var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast(msg); });
+  }
+
+  lerLetra();
+  aoMudarEstilo();
+  escalar();
+})();
+</script>
+</body>
+</html>

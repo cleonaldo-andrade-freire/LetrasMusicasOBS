@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Rodapé de Letras — OBS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Inter:wght@500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fonte: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    --tamanho: 54px;
+    --cor-texto: #ffffff;
+    --cor-destaque: #f2b705;
+    --opacidade: 0.72;
+    --margem-baixo: 64px;
+    --largura: 1760px;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    width: 1920px; height: 1080px;
+    overflow: hidden;
+    background: transparent;
+  }
+  body { font-family: var(--fonte); }
+
+  .palco {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; align-items: center;
+    padding-bottom: var(--margem-baixo);
+    opacity: 0; transform: translateY(18px);
+    transition: opacity .35s ease, transform .35s ease;
+    pointer-events: none;
+  }
+  .palco.visivel { opacity: 1; transform: none; }
+
+  .titulo {
+    display: none;
+    font-size: 22px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: #111; background: var(--cor-destaque);
+    padding: 6px 16px; border-radius: 6px 6px 0 0;
+    align-self: center;
+  }
+  .com-titulo .titulo { display: block; }
+
+  .caixa {
+    box-sizing: border-box;
+    max-width: var(--largura);
+    min-width: 760px;
+    padding: 22px 48px 24px;
+    text-align: center;
+  }
+  .texto {
+    color: var(--cor-texto);
+    font-size: var(--tamanho);
+    font-weight: 600;
+    line-height: 1.24;
+    transition: opacity .18s ease;
+  }
+  .texto.trocando { opacity: 0; }
+  .linha { display: block; white-space: nowrap; }
+
+  /* ---------- Estilo: faixa (caixa translúcida com barra de destaque) ---------- */
+  .estilo-faixa .caixa {
+    background: rgba(8, 12, 20, var(--opacidade));
+    border-radius: 14px;
+    border-bottom: 5px solid var(--cor-destaque);
+    box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    backdrop-filter: blur(6px);
+  }
+  .estilo-faixa .texto { text-shadow: 0 2px 6px rgba(0,0,0,.45); }
+
+  /* ---------- Estilo: degradê (faixa inteira de baixo, sem caixa) ---------- */
+  .estilo-degrade::before {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 340px;
+    background: linear-gradient(to top, rgba(0,0,0,calc(var(--opacidade) + .1)) 0%, rgba(0,0,0,calc(var(--opacidade) * .6)) 45%, rgba(0,0,0,0) 100%);
+    z-index: -1;
+  }
+  .estilo-degrade .texto { text-shadow: 0 3px 10px rgba(0,0,0,.75), 0 0 2px rgba(0,0,0,.9); }
+  .estilo-degrade .titulo { border-radius: 6px; margin-bottom: 4px; }
+
+  /* ---------- Estilo: limpo (só texto com sombra forte) ---------- */
+  .estilo-limpo .texto {
+    text-shadow: 0 0 3px #000, 0 0 3px #000, 0 3px 12px rgba(0,0,0,.9);
+  }
+  .estilo-limpo .titulo { border-radius: 6px; margin-bottom: 4px; }
+
+  /* Painel de diagnóstico (?debug=1) */
+  #debug {
+    position: absolute; top: 16px; left: 16px; max-width: 900px;
+    font: 18px/1.4 Consolas, monospace; color: #0f0; background: rgba(0,0,0,.8);
+    padding: 10px 14px; border-radius: 8px; white-space: pre-wrap; display: none;
+  }
+</style>
+</head>
+<body>
+<div id="palco" class="palco estilo-faixa">
+  <div class="titulo" id="titulo"></div>
+  <div class="caixa"><div class="texto" id="texto"></div></div>
+</div>
+<div id="debug"></div>
+
+<script src="js/lyrics-core.js"></script>
+<script src="js/holyrics.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LC = window.LyricsCore;
+  var q = new URLSearchParams(location.search);
+
+  /* ===================== Configuração (via parâmetros da URL) ===================== */
+  var cfg = {
+    modo: q.get('modo') || 'holyrics',          // holyrics | demo | estudio
+    api: q.get('api') || '',                    // vazio = mesmo servidor (servidor.ps1); ou http://IP:PORTA
+    token: q.get('token') || '',
+    intervalo: +(q.get('intervalo') || 400),    // ms entre consultas ao Holyrics
+    linhas: +(q.get('linhas') || 2),            // máx. de linhas no rodapé
+    estilo: q.get('estilo') || 'faixa',         // faixa | degrade | limpo
+    fonte: q.get('fonte') || 'Montserrat',
+    tamanho: +(q.get('tamanho') || 54),         // px (em 1080p)
+    minimo: +(q.get('minimo') || 36),           // menor tamanho ao encolher
+    cor: q.get('cor') || 'ffffff',
+    destaque: q.get('destaque') || 'f2b705',
+    opacidade: q.has('opacidade') ? +q.get('opacidade') : 0.72,
+    margem: +(q.get('margem') || 64),
+    titulo: q.get('titulo') === '1',
+    tipos: (q.get('tipos') || 'song,text').split(','),
+    maiusculas: q.get('maiusculas') === '1',
+    capa: q.get('capa') === '1',                // mostrar o slide de capa (nome/artista) no rodapé
+    debug: q.get('debug') === '1'
+  };
+
+  var el = {
+    palco: document.getElementById('palco'),
+    texto: document.getElementById('texto'),
+    titulo: document.getElementById('titulo'),
+    debug: document.getElementById('debug')
+  };
+
+  function aplicarEstilo() {
+    var r = document.documentElement.style;
+    r.setProperty('--fonte', "'" + cfg.fonte + "', 'Segoe UI', Arial, sans-serif");
+    r.setProperty('--tamanho', cfg.tamanho + 'px');
+    r.setProperty('--cor-texto', '#' + cfg.cor.replace('#', ''));
+    r.setProperty('--cor-destaque', '#' + cfg.destaque.replace('#', ''));
+    r.setProperty('--opacidade', cfg.opacidade);
+    r.setProperty('--margem-baixo', cfg.margem + 'px');
+    el.palco.className = 'palco estilo-' + cfg.estilo + (cfg.titulo ? ' com-titulo' : '') +
+      (el.palco.classList.contains('visivel') ? ' visivel' : '');
+    el.texto.style.textTransform = cfg.maiusculas ? 'uppercase' : 'none';
+    el.debug.style.display = cfg.debug ? 'block' : 'none';
+    ajustarTamanho();
+  }
+
+  /* ===================== Renderização ===================== */
+  var atual = { chave: null };
+
+  /** Diminui a fonte até todas as linhas caberem na largura disponível. */
+  function ajustarTamanho() {
+    var tam = cfg.tamanho;
+    el.texto.style.fontSize = tam + 'px';
+    var limite = 1760 - 96; // largura máx. da caixa menos o padding lateral
+    var spans = el.texto.querySelectorAll('.linha');
+    spans.forEach(function (s) { s.style.whiteSpace = 'nowrap'; }); // mede sempre sem quebra
+    function maiorLargura() {
+      var m = 0;
+      spans.forEach(function (s) { m = Math.max(m, s.scrollWidth); });
+      return m;
+    }
+    while (tam > cfg.minimo && maiorLargura() > limite) {
+      tam -= 2;
+      el.texto.style.fontSize = tam + 'px';
+    }
+    // Se ainda não coube no tamanho mínimo, permite quebrar a linha.
+    var quebra = maiorLargura() > limite;
+    spans.forEach(function (s) { s.style.whiteSpace = quebra ? 'normal' : 'nowrap'; });
+  }
+
+  function escrever(linhas) {
+    el.texto.innerHTML = '';
+    linhas.forEach(function (l) {
+      var s = document.createElement('span');
+      s.className = 'linha';
+      s.textContent = l;
+      el.texto.appendChild(s);
+    });
+    ajustarTamanho();
+  }
+
+  var timerTroca = null;
+  /** Mostra um slide (texto bruto com quebras de linha) ou esconde se vazio. */
+  function mostrar(textoSlide, tituloMusica) {
+    var linhas = LC.paraRodape(LC.linhas(textoSlide), cfg.linhas);
+    var chave = linhas.join('\n') + '|' + (tituloMusica || '');
+    if (chave === atual.chave) return;
+    atual.chave = chave;
+
+    clearTimeout(timerTroca);
+    if (!linhas.length) { el.palco.classList.remove('visivel'); return; }
+
+    el.titulo.textContent = tituloMusica || '';
+    if (!el.palco.classList.contains('visivel')) {
+      escrever(linhas);
+      el.texto.classList.remove('trocando');
+      el.palco.classList.add('visivel');
+    } else {
+      el.texto.classList.add('trocando');
+      timerTroca = setTimeout(function () {
+        escrever(linhas);
+        el.texto.classList.remove('trocando');
+      }, 180);
+    }
+  }
+
+  function log(msg) {
+    if (cfg.debug) el.debug.textContent = new Date().toLocaleTimeString() + '\n' + msg;
+  }
+
+  /* ===================== Fonte: Holyrics (API Server) ===================== */
+  function consultarHolyrics() {
+    new HolyricsClient({
+      api: cfg.api, token: cfg.token, intervalo: cfg.intervalo,
+      aoMudar: function (i) {
+        var permitido = (!i.tipo || cfg.tipos.indexOf(i.tipo) >= 0) && (!i.capa || cfg.capa);
+        mostrar(permitido ? i.texto : '', i.titulo);
+        log(i.bruto ? ('tipo: ' + i.tipo + ' | slide ' + i.slide + '/' + i.total + ' | slide_type: ' + i.tipoSlide +
+            '\nnome: ' + i.titulo + '\ntexto:\n' + (i.texto || '(sem texto)')) : 'Nada em apresentação.');
+      },
+      aoErro: function (e) {
+        log('ERRO: ' + e.message + '\n\nVerifique: servidor.ps1 rodando, API Server ativo no Holyrics, token e porta em config.json.');
+      }
+    }).iniciar();
+  }
+
+  /* ===================== Fonte: estúdio (postMessage) ===================== */
+  window.addEventListener('message', function (ev) {
+    var m = ev.data || {};
+    if (m.tipo === 'slide') mostrar((m.capa && !cfg.capa) ? '' : (m.texto || ''), m.titulo || '');
+    if (m.tipo === 'config') { Object.assign(cfg, m.cfg || {}); atual.chave = null; aplicarEstilo(); }
+  });
+
+  /* ===================== Fonte: demonstração ===================== */
+  function demo() {
+    var slides = [
+      'Vem, Senhor, renova o meu coração\nFaz de mim um vaso em Tuas mãos',
+      'Quero andar contigo cada dia\nTua graça é a minha alegria\nTua luz ilumina o meu caminho\nNunca mais eu vou andar sozinho',
+      '',
+      'Santo, santo é o Senhor\nDigno de toda honra e louvor'
+    ];
+    var i = 0;
+    (function prox() { mostrar(slides[i % slides.length], 'Música de exemplo'); i++; setTimeout(prox, 3500); })();
+  }
+
+  document.fonts && document.fonts.ready.then(ajustarTamanho);
+  aplicarEstilo();
+  if (cfg.modo === 'holyrics') consultarHolyrics();
+  else if (cfg.modo === 'demo') demo();
+  if (window.parent !== window) window.parent.postMessage({ tipo: 'pronto', origem: 'rodape' }, '*');
+})();
+</script>
+</body>
+</html>

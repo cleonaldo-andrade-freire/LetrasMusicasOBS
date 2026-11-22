@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Simulação da TV — Projeção local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --fonte: 'Montserrat', 'Segoe UI', Arial, sans-serif; --cor-texto: #fff; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #05070c; }
+  .fundo {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 35%, #1b2a44 0%, #0a1020 55%, #04060b 100%);
+    background-size: cover; background-position: center;
+  }
+  .fundo.escurecer::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+  .area {
+    position: absolute; left: 96px; right: 96px; top: 80px; bottom: 80px; /* área segura ~5% */
+    display: flex; align-items: center; justify-content: center; text-align: center;
+  }
+  .texto {
+    font-family: var(--fonte); font-weight: 700; color: var(--cor-texto);
+    line-height: 1.22; text-shadow: 0 4px 14px rgba(0,0,0,.6);
+    transition: opacity .2s ease;
+  }
+  .texto.oculto { opacity: 0; }
+  .linha { display: block; white-space: nowrap; }
+  .guia {
+    position: absolute; left: 96px; right: 96px; top: 80px; bottom: 80px;
+    border: 2px dashed rgba(255,255,255,.18); display: none;
+  }
+  .mostrar-guia .guia { display: block; }
+</style>
+</head>
+<body>
+<div class="fundo" id="fundo"></div>
+<div class="guia"></div>
+<div class="area"><div class="texto" id="texto"></div></div>
+
+<script src="js/lyrics-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LC = window.LyricsCore;
+  var q = new URLSearchParams(location.search);
+  var cfg = {
+    fonte: q.get('fonte') || 'Montserrat',
+    maximo: +(q.get('maximo') || 110),   // tamanho máx. da fonte (px em 1080p)
+    maiusculas: q.get('maiusculas') === '1',
+    guia: q.get('guia') === '1',
+    fundo: ''
+  };
+  var el = { texto: document.getElementById('texto'), fundo: document.getElementById('fundo') };
+
+  function aplicar() {
+    document.documentElement.style.setProperty('--fonte', "'" + cfg.fonte + "', 'Segoe UI', Arial, sans-serif");
+    el.texto.style.textTransform = cfg.maiusculas ? 'uppercase' : 'none';
+    document.body.classList.toggle('mostrar-guia', !!cfg.guia);
+    if (cfg.fundo) { el.fundo.style.backgroundImage = 'url("' + cfg.fundo + '")'; el.fundo.classList.add('escurecer'); }
+    else { el.fundo.style.backgroundImage = ''; el.fundo.classList.remove('escurecer'); }
+    ajustar();
+  }
+
+  /** Maior fonte possível (até o máximo) que caiba na área segura — igual ao "ajustar texto" do Holyrics. */
+  function ajustar() {
+    var larg = 1920 - 192, alt = 1080 - 160;
+    var lo = 24, hi = cfg.maximo, best = lo;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1;
+      el.texto.style.fontSize = mid + 'px';
+      if (el.texto.scrollWidth <= larg && el.texto.scrollHeight <= alt) { best = mid; lo = mid + 1; } else hi = mid - 1;
+    }
+    el.texto.style.fontSize = best + 'px';
+    window.parent !== window && window.parent.postMessage({ tipo: 'tv-fonte', px: best }, '*');
+  }
+
+  function mostrar(texto) {
+    var linhas = LC.linhas(texto);
+    el.texto.classList.add('oculto');
+    setTimeout(function () {
+      el.texto.innerHTML = '';
+      linhas.forEach(function (l) {
+        var s = document.createElement('span'); s.className = 'linha'; s.textContent = l; el.texto.appendChild(s);
+      });
+      ajustar();
+      el.texto.classList.remove('oculto');
+    }, 120);
+  }
+
+  window.addEventListener('message', function (ev) {
+    var m = ev.data || {};
+    if (m.tipo === 'slide') mostrar(m.texto || '');
+    if (m.tipo === 'config-tv') { Object.assign(cfg, m.cfg || {}); aplicar(); }
+  });
+  document.fonts && document.fonts.ready.then(ajustar);
+  aplicar();
+  if (window.parent !== window) window.parent.postMessage({ tipo: 'pronto', origem: 'tv' }, '*');
+})();
+</script>
+</body>
+</html>
