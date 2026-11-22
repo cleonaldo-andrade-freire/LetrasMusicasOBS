@@ -13,7 +13,8 @@ Holyrics (API Server) ──► servidor.ps1 (localhost:8787) ──► OBS: Fon
 |---|---|
 | `Iniciar-Rodape.bat` | Liga o servidor local. **Deixe aberto durante o culto.** |
 | `Simular-Holyrics.bat` | Liga o servidor fingindo ser o Holyrics, para testar sem o Holyrics aberto. |
-| `config.json` | Endereço, porta e token do Holyrics. |
+| `config.json` | Endereço, porta e token do Holyrics. Não vem no repositório: crie a partir do `config.exemplo.json`. |
+| `config.exemplo.json` | Modelo do `config.json`, sem token. |
 | `rodape.html` | O rodapé (overlay) usado no OBS. |
 | `studio.html` | Estúdio: simula a TV 49" e a live em 1080p, formata letras e gera a URL do OBS. |
 | `tv.html` | Simulação da tela da TV (usada pelo estúdio). |
@@ -26,7 +27,8 @@ Holyrics (API Server) ──► servidor.ps1 (localhost:8787) ──► OBS: Fon
 2. Ative o servidor **local**.
 3. Anote a **porta** que aparece ali.
 4. Em **Gerenciar permissões**, crie um token e dê a ele a permissão **GetCurrentPresentation**. Só essa permissão já basta.
-5. Abra `config.json` no Bloco de Notas e preencha:
+5. Se ainda não existir um `config.json` na pasta (por exemplo, ao baixar o projeto do GitHub), copie o `config.exemplo.json` e renomeie a cópia para `config.json`.
+6. Abra `config.json` no Bloco de Notas e preencha:
 
 ```json
 {

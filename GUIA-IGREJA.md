@@ -53,6 +53,7 @@ Este guia repete na igreja exatamente o que testamos: o **Holyrics** projeta a l
 
 1. [ ] Copie a pasta **`LetrasMusicasOBS`** inteira para um pen drive, ou para o Google Drive.
 2. [ ] **Apague o token de teste.** Abra o `config.json` da cópia com o Bloco de Notas e troque o valor de `"token"` por `"COLOCAR_TOKEN_DA_IGREJA"`. Salve. O token de teste só vale no computador de testes, e é melhor não deixá-lo circulando.
+   - **Baixou a pasta do GitHub?** Ela não traz o `config.json` (o arquivo com token fica fora do repositório). Copie o `config.exemplo.json` e renomeie a cópia para `config.json`. Ele já vem sem token.
 
 **✔ Deve aparecer:** na pasta do pen drive, os arquivos `Iniciar-Rodape.bat`, `config.json`, `rodape.html`, `studio.html`, `servidor.ps1` e a pasta `js`.
 
@@ -218,8 +219,9 @@ No Holyrics, abra as configurações do **tema** usado nas músicas e ajuste:
 
 ### 3.2 Preencher o `config.json`
 
-1. [ ] Na pasta, clique com o botão direito em `config.json` e escolha **Abrir com → Bloco de Notas**.
-2. [ ] Preencha **com cuidado**, mantendo as aspas, os dois-pontos e as vírgulas:
+1. [ ] Se não houver `config.json` na pasta, copie o `config.exemplo.json` e renomeie a cópia para `config.json`.
+2. [ ] Na pasta, clique com o botão direito em `config.json` e escolha **Abrir com → Bloco de Notas**.
+3. [ ] Preencha **com cuidado**, mantendo as aspas, os dois-pontos e as vírgulas:
 
    **Holyrics no mesmo PC:**
    ```json
@@ -239,8 +241,8 @@ No Holyrics, abra as configurações do **tema** usado nas músicas e ajuste:
    }
    ```
 
-3. [ ] Se a porta anotada no passo 2.2 não for 8091, troque o número em `holyricsUrl`.
-4. [ ] Salve com **Ctrl+S** e feche.
+4. [ ] Se a porta anotada no passo 2.2 não for 8091, troque o número em `holyricsUrl`.
+5. [ ] Salve com **Ctrl+S** e feche.
 
 > ℹ️ **Não mude `"porta": 8787`.** Essa é a porta do servidor do rodapé, que é outra coisa. Só mude se a 8787 já estiver em uso no PC.
 
@@ -457,5 +459,6 @@ Com o Holyrics projetando na TV, o servidor aberto e o OBS aberto, confira cada 
 |---|---|
 | `Iniciar-Rodape.bat` | Liga o servidor (deixe aberto durante o culto) |
 | `Simular-Holyrics.bat` | Servidor de **treino**: finge ser o Holyrics, para treinar operadores sem o Holyrics |
-| `config.json` | Endereço, porta e token do Holyrics. **Contém o token: não compartilhe** |
+| `config.json` | Endereço, porta e token do Holyrics. **Contém o token: não compartilhe** (fica fora do GitHub) |
+| `config.exemplo.json` | Modelo do `config.json`, sem token. Copie e renomeie para `config.json` |
 | `LEIA-ME.md` | Detalhes técnicos e todas as opções da URL do rodapé |
